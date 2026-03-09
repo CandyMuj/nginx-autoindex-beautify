@@ -11,6 +11,27 @@
 - 🎨 **响应式设计** - 适配桌面和移动设备
 - ⚡ **轻量级** - 纯前端实现，无需后端支持
 
+## 效果展示
+
+<table>
+  <tr>
+    <td><img src="assets/1.png" width="400"/></td>
+    <td><img src="assets/2.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td><img src="assets/3.png" width="400"/></td>
+    <td><img src="assets/4.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td><img src="assets/5.png" width="400"/></td>
+    <td><img src="assets/6.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td><img src="assets/7.png" width="400"/></td>
+    <td><img src="assets/8.png" width="400"/></td>
+  </tr>
+</table>
+
 ## 使用方法
 
 ### 第一步：配置美化脚本路径
