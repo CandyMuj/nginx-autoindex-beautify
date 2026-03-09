@@ -121,7 +121,7 @@ function render(files) {
                 <div class="file-name">${file.name}</div>
                 <div class="file-meta">${file.mtime} · ${formatSize(file.size)}</div>
             </div>
-            ${!file.isDir ? '<button class="download-btn" onclick="event.stopPropagation(); window.location.href=\'' + file.href + '\'">下载</button>' : ''}
+            ${!file.isDir ? '<button class="download-btn" onclick="event.stopPropagation(); window.open(\'' + file.href + '\', \'_blank\')">下载</button>' : ''}
         `;
         item.onclick = () => handleClick(file);
         list.appendChild(item);
