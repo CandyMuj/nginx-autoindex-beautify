@@ -21,8 +21,14 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 .preview-panel { width: 50%; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: none; height: min(max(600px, calc(100vh - 200px)), 800px); overflow: hidden; flex-direction: column; }
 .preview-panel.active { display: flex; }
 .preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #eee; flex-shrink: 0; }
-.close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+.preview-actions { display: flex; gap: 10px; }
+.close-btn, .fullscreen-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+.close-btn:hover, .fullscreen-btn:hover { color: #333; }
 .preview-content { overflow-y: auto; flex: 1; }
+.fullscreen-preview { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; flex-direction: column; padding: 40px; }
+.fullscreen-preview.active { display: flex; }
+.fullscreen-preview .preview-header { margin-bottom: 30px; }
+.fullscreen-preview .preview-content { flex: 1; overflow-y: auto; }
 .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
 .lightbox.active { display: flex; }
 .lightbox img { max-width: 90%; max-height: 90%; }
@@ -62,11 +68,22 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
         <div class="preview-panel" id="previewPanel">
             <div class="preview-header">
                 <span id="previewTitle"></span>
-                <button class="close-btn" onclick="closePreview()">✕</button>
+                <div class="preview-actions">
+                    <button class="fullscreen-btn" onclick="openFullscreen()">⛶</button>
+                    <button class="close-btn" onclick="closePreview()">✕</button>
+                </div>
             </div>
             <div class="preview-content" id="previewContent"></div>
         </div>
     </div>
+</div>
+
+<div class="fullscreen-preview" id="fullscreenPreview">
+    <div class="preview-header">
+        <span id="fullscreenTitle"></span>
+        <button class="close-btn" onclick="closeFullscreen()">✕</button>
+    </div>
+    <div class="preview-content" id="fullscreenContent"></div>
 </div>
 
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
@@ -212,6 +229,18 @@ function closeLightbox() {
 
 function closePreview() {
     document.getElementById('previewPanel').classList.remove('active');
+}
+
+function openFullscreen() {
+    const title = document.getElementById('previewTitle').textContent;
+    const content = document.getElementById('previewContent').innerHTML;
+    document.getElementById('fullscreenTitle').textContent = title;
+    document.getElementById('fullscreenContent').innerHTML = content;
+    document.getElementById('fullscreenPreview').classList.add('active');
+}
+
+function closeFullscreen() {
+    document.getElementById('fullscreenPreview').classList.remove('active');
 }
 
 const path = window.location.pathname;
