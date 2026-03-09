@@ -148,6 +148,7 @@ let currentMediaIndex = 0;
 let currentMediaList = [];
 let isFromMediaGallery = false;
 let previousMediaContent = '';
+let mdScrollPositions = {};
 
 function getIcon(name, isDir) {
     if (isDir) return icons.folder;
@@ -245,17 +246,23 @@ async function handleClick(file) {
     const ext = file.name.split('.').pop().toLowerCase();
 
     if (ext === 'md') {
+        const currentTitle = document.getElementById('previewTitle').textContent;
+        const previewContent = document.getElementById('previewContent');
+        if (currentTitle) mdScrollPositions[currentTitle] = previewContent.scrollTop;
+
         const res = await fetch(file.href);
         let content = await res.text();
-
         const html = marked.parse(content);
 
-        document.getElementById('previewTitle').textContent = file.name;
-        document.getElementById('previewContent').innerHTML = html;
-
-        document.querySelectorAll('#previewContent pre code').forEach(block => {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        tempDiv.querySelectorAll('pre code').forEach(block => {
             hljs.highlightElement(block);
         });
+
+        document.getElementById('previewTitle').textContent = file.name;
+        previewContent.innerHTML = tempDiv.innerHTML;
+        previewContent.scrollTop = mdScrollPositions[file.name] || 0;
 
         document.getElementById('previewPanel').classList.add('active');
     } else if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(ext)) {
