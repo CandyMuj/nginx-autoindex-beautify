@@ -8,7 +8,8 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 .breadcrumb { color: #666; font-size: 14px; }
 .breadcrumb a { color: #0066cc; text-decoration: none; }
 .content { display: flex; gap: 20px; }
-.file-list { flex: 1; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.file-list { flex: 1; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: min(max(600px, calc(100vh - 200px)), 800px); overflow: hidden; display: flex; flex-direction: column; }
+.file-list-content { overflow-y: auto; flex: 1; }
 .file-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
 .file-item:hover { background: #f9f9f9; }
 .file-icon { font-size: 24px; margin-right: 12px; width: 30px; text-align: center; }
@@ -17,11 +18,11 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 .file-meta { font-size: 12px; color: #999; }
 .download-btn { padding: 6px 12px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
 .download-btn:hover { background: #0052a3; }
-.preview-panel { width: 50%; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: none; }
-.preview-panel.active { display: block; }
-.preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #eee; }
+.preview-panel { width: 50%; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: none; height: min(max(600px, calc(100vh - 200px)), 800px); overflow: hidden; flex-direction: column; }
+.preview-panel.active { display: flex; }
+.preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #eee; flex-shrink: 0; }
 .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
-.preview-content { overflow-y: auto; max-height: calc(100vh - 200px); }
+.preview-content { overflow-y: auto; flex: 1; }
 .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
 .lightbox.active { display: flex; }
 .lightbox img { max-width: 90%; max-height: 90%; }
@@ -55,7 +56,9 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
         <div class="breadcrumb" id="breadcrumb"></div>
     </header>
     <div class="content">
-        <div class="file-list" id="fileList"></div>
+        <div class="file-list">
+            <div class="file-list-content" id="fileList"></div>
+        </div>
         <div class="preview-panel" id="previewPanel">
             <div class="preview-header">
                 <span id="previewTitle"></span>
