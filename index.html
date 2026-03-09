@@ -58,7 +58,7 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 .media-tab.active { border-bottom-color: #2196F3; color: #2196F3; font-weight: 600; }
 .media-tab:hover { color: #2196F3; }
 .media-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-.media-item { border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s; background: white; }
+.media-item { border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s; background: white; position: relative; }
 .media-item:hover { transform: translateY(-5px); }
 .media-item img, .media-item video { width: 100%; height: 150px; object-fit: cover; }
 .media-item .name { padding: 10px; font-size: 12px; text-align: center; word-break: break-all; }
@@ -68,6 +68,13 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 .lightbox-next { right: 20px; }
 .lightbox-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; font-size: 16px; background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 20px; z-index: 10001; }
 .lightbox-filename { position: absolute; top: 20px; left: 20px; color: white; font-size: 16px; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 4px; max-width: 60%; word-break: break-all; z-index: 10001; }
+.video-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 150px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+.media-item:hover .video-overlay { opacity: 1; }
+.video-play-icon { font-size: 48px; color: white; }
+.video-controls { position: absolute; bottom: 40px; left: 0; right: 0; padding: 8px; background: rgba(0,0,0,0.7); display: flex; gap: 8px; align-items: center; opacity: 0; transition: opacity 0.3s; }
+.media-item:hover .video-controls { opacity: 1; }
+.video-btn { background: none; border: none; color: white; font-size: 18px; cursor: pointer; padding: 4px 8px; }
+.video-btn:hover { color: #2196F3; }
 @media (max-width: 768px) {
     .content { flex-direction: column; }
     .preview-panel { width: 100%; }
@@ -139,6 +146,8 @@ const icons = {
 let allFiles = [];
 let currentMediaIndex = 0;
 let currentMediaList = [];
+let isFromMediaGallery = false;
+let previousMediaContent = '';
 
 function getIcon(name, isDir) {
     if (isDir) return icons.folder;
@@ -296,7 +305,13 @@ function nextMedia() {
 }
 
 function closePreview() {
-    document.getElementById('previewPanel').classList.remove('active');
+    if (isFromMediaGallery) {
+        document.getElementById('previewTitle').textContent = '媒体资源';
+        document.getElementById('previewContent').innerHTML = previousMediaContent;
+        isFromMediaGallery = false;
+    } else {
+        document.getElementById('previewPanel').classList.remove('active');
+    }
 }
 
 function openFullscreen() {
@@ -311,7 +326,43 @@ function closeFullscreen() {
     document.getElementById('fullscreenPreview').classList.remove('active');
 }
 
+function toggleVideo(video) {
+    const overlay = video.nextElementSibling;
+    const btn = video.closest('.media-item').querySelector('.video-controls .video-btn');
+    if (video.paused) {
+        video.play();
+        if (overlay) overlay.style.opacity = '0';
+        if (btn) btn.textContent = '⏸';
+    } else {
+        video.pause();
+        if (overlay) overlay.style.opacity = '1';
+        if (btn) btn.textContent = '▶';
+    }
+}
+
+function openVideoPreview(href, name) {
+    isFromMediaGallery = true;
+    previousMediaContent = document.getElementById('previewContent').innerHTML;
+    const video = `<video controls style="width:100%;max-height:70vh"><source src="${href}"></video>`;
+    document.getElementById('previewTitle').textContent = name;
+    document.getElementById('previewContent').innerHTML = video;
+}
+
+function fullscreenVideo(href) {
+    const video = document.createElement('video');
+    video.src = href;
+    video.controls = true;
+    video.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;object-fit:contain;background:#000;z-index:9999';
+    document.body.appendChild(video);
+    video.requestFullscreen();
+    video.play();
+    video.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) video.remove();
+    });
+}
+
 function showMediaGallery() {
+    isFromMediaGallery = false;
     const images = allFiles.filter(f => !f.isDir && ['jpg','jpeg','png','gif','svg','webp'].includes(f.name.split('.').pop().toLowerCase()));
     const videos = allFiles.filter(f => !f.isDir && ['mp4','avi','mkv','mov','webm'].includes(f.name.split('.').pop().toLowerCase()));
     const audios = allFiles.filter(f => !f.isDir && ['mp3','wav','ogg','m4a'].includes(f.name.split('.').pop().toLowerCase()));
@@ -361,7 +412,13 @@ function filterMedia(type) {
             </div>`;
         } else if (isVideo) {
             return `<div class="media-item">
-                <video src="${file.href}" onclick="this.paused?this.play():this.pause()"></video>
+                <video src="${file.href}" onclick="event.stopPropagation(); toggleVideo(this)"></video>
+                <div class="video-overlay"><span class="video-play-icon">▶</span></div>
+                <div class="video-controls">
+                    <button class="video-btn" onclick="event.stopPropagation(); toggleVideo(this.closest('.media-item').querySelector('video'))" title="播放/暂停">▶</button>
+                    <button class="video-btn" onclick="event.stopPropagation(); openVideoPreview('${file.href}', '${file.name}')" title="放大预览">🔍</button>
+                    <button class="video-btn" onclick="event.stopPropagation(); fullscreenVideo('${file.href}')" title="全屏播放">⛶</button>
+                </div>
                 <div class="name">${file.name}</div>
             </div>`;
         } else {
