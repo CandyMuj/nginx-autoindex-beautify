@@ -96,6 +96,7 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
         <div class="breadcrumb" id="breadcrumb"></div>
         <div class="header-actions">
             <button class="media-btn" onclick="showMediaGallery()">📷 媒体资源</button>
+            <button class="media-btn" onclick="showDocGallery()">📝 文档预览</button>
         </div>
     </header>
     <div class="content">
@@ -146,8 +147,9 @@ const icons = {
 let allFiles = [];
 let currentMediaIndex = 0;
 let currentMediaList = [];
-let isFromMediaGallery = false;
+let galleryType = '';
 let previousMediaContent = '';
+let previousScrollPosition = 0;
 let mdScrollPositions = {};
 
 function getIcon(name, isDir) {
@@ -312,10 +314,15 @@ function nextMedia() {
 }
 
 function closePreview() {
-    if (isFromMediaGallery) {
-        document.getElementById('previewTitle').textContent = '媒体资源';
-        document.getElementById('previewContent').innerHTML = previousMediaContent;
-        isFromMediaGallery = false;
+    if (galleryType) {
+        const currentTitle = document.getElementById('previewTitle').textContent;
+        const previewContent = document.getElementById('previewContent');
+        if (currentTitle) mdScrollPositions[currentTitle] = previewContent.scrollTop;
+
+        document.getElementById('previewTitle').textContent = galleryType;
+        previewContent.innerHTML = previousMediaContent;
+        previewContent.scrollTop = previousScrollPosition;
+        galleryType = '';
     } else {
         document.getElementById('previewPanel').classList.remove('active');
     }
@@ -348,7 +355,7 @@ function toggleVideo(video) {
 }
 
 function openVideoPreview(href, name) {
-    isFromMediaGallery = true;
+    galleryType = '媒体资源';
     previousMediaContent = document.getElementById('previewContent').innerHTML;
     const video = `<video controls style="width:100%;max-height:70vh"><source src="${href}"></video>`;
     document.getElementById('previewTitle').textContent = name;
@@ -369,7 +376,7 @@ function fullscreenVideo(href) {
 }
 
 function showMediaGallery() {
-    isFromMediaGallery = false;
+    galleryType = '';
     const images = allFiles.filter(f => !f.isDir && ['jpg','jpeg','png','gif','svg','webp'].includes(f.name.split('.').pop().toLowerCase()));
     const videos = allFiles.filter(f => !f.isDir && ['mp4','avi','mkv','mov','webm'].includes(f.name.split('.').pop().toLowerCase()));
     const audios = allFiles.filter(f => !f.isDir && ['mp3','wav','ogg','m4a'].includes(f.name.split('.').pop().toLowerCase()));
@@ -390,6 +397,76 @@ function showMediaGallery() {
     window.mediaData = { images, videos, audios };
     filterMedia('all');
     document.getElementById('previewPanel').classList.add('active');
+}
+
+function showDocGallery() {
+    galleryType = '';
+    const markdown = allFiles.filter(f => !f.isDir && ['md'].includes(f.name.split('.').pop().toLowerCase()));
+    const web = allFiles.filter(f => !f.isDir && ['html','htm'].includes(f.name.split('.').pop().toLowerCase()));
+    const static_ = allFiles.filter(f => !f.isDir && ['css','js'].includes(f.name.split('.').pop().toLowerCase()));
+    const text = allFiles.filter(f => !f.isDir && ['txt'].includes(f.name.split('.').pop().toLowerCase()));
+    const other = allFiles.filter(f => !f.isDir && !['md','html','htm','css','js','txt','jpg','jpeg','png','gif','svg','webp','mp4','avi','mkv','mov','webm','mp3','wav','ogg','m4a'].includes(f.name.split('.').pop().toLowerCase()));
+
+    const total = markdown.length + web.length + static_.length + text.length + other.length;
+
+    document.getElementById('previewTitle').textContent = '文档预览';
+    document.getElementById('previewContent').innerHTML = `
+        <div class="media-tabs">
+            <div class="media-tab active" onclick="filterDoc('all')">全部 (${total})</div>
+            <div class="media-tab" onclick="filterDoc('markdown')">MarkDown (${markdown.length})</div>
+            <div class="media-tab" onclick="filterDoc('web')">Web (${web.length})</div>
+            <div class="media-tab" onclick="filterDoc('static')">Static (${static_.length})</div>
+            <div class="media-tab" onclick="filterDoc('text')">Text (${text.length})</div>
+            <div class="media-tab" onclick="filterDoc('other')">Other (${other.length})</div>
+        </div>
+        <div id="docGallery"></div>
+    `;
+
+    window.docData = { markdown, web, static_, text, other };
+    filterDoc('all');
+    document.getElementById('previewPanel').classList.add('active');
+}
+
+function filterDoc(type) {
+    document.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const { markdown, web, static_, text, other } = window.docData;
+    let items = [];
+
+    if (type === 'all') items = [...markdown, ...web, ...static_, ...text, ...other];
+    else if (type === 'markdown') items = markdown;
+    else if (type === 'web') items = web;
+    else if (type === 'static') items = static_;
+    else if (type === 'text') items = text;
+    else if (type === 'other') items = other;
+
+    const gallery = document.getElementById('docGallery');
+    gallery.innerHTML = items.map(file => `
+        <div class="file-item" onclick="handleDocClick('${file.href}', '${file.name}')">
+            <div class="file-icon">${getIcon(file.name, false)}</div>
+            <div class="file-info">
+                <div class="file-name">${file.name}</div>
+                <div class="file-meta">${formatTime(file.mtime)} · ${formatSize(file.size)}</div>
+            </div>
+            <button class="download-btn" onclick="event.stopPropagation(); window.open('${file.href}', '_blank')">下载</button>
+        </div>
+    `).join('');
+}
+
+async function handleDocClick(href, name) {
+    const ext = name.split('.').pop().toLowerCase();
+
+    if (ext === 'md') {
+        galleryType = '文档预览';
+        const previewContent = document.getElementById('previewContent');
+        previousMediaContent = previewContent.innerHTML;
+        previousScrollPosition = previewContent.scrollTop;
+
+        await handleClick({ name, href, isDir: false });
+    } else {
+        window.open(href);
+    }
 }
 
 function filterMedia(type) {
