@@ -1,0 +1,175 @@
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; }
+pre { display: none !important; }
+.container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+header h1 { font-size: 24px; margin-bottom: 10px; }
+.breadcrumb { color: #666; font-size: 14px; }
+.breadcrumb a { color: #0066cc; text-decoration: none; }
+.content { display: flex; gap: 20px; }
+.file-list { flex: 1; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.file-item { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; transition: background 0.2s; }
+.file-item:hover { background: #f9f9f9; }
+.file-icon { font-size: 24px; margin-right: 12px; width: 30px; text-align: center; }
+.file-info { flex: 1; }
+.file-name { font-weight: 500; margin-bottom: 4px; }
+.file-meta { font-size: 12px; color: #999; }
+.preview-panel { width: 50%; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: none; }
+.preview-panel.active { display: block; }
+.preview-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #eee; }
+.close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #999; }
+.preview-content { overflow-y: auto; max-height: calc(100vh - 200px); }
+.lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
+.lightbox.active { display: flex; }
+.lightbox img { max-width: 90%; max-height: 90%; }
+.lightbox-close { position: absolute; top: 20px; right: 20px; background: white; border: none; font-size: 30px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
+@media (max-width: 768px) {
+    .content { flex-direction: column; }
+    .preview-panel { width: 100%; }
+    .file-item { flex-wrap: wrap; }
+}
+</style>
+
+<div class="container">
+    <header>
+        <h1>📁 文件浏览器</h1>
+        <div class="breadcrumb" id="breadcrumb"></div>
+    </header>
+    <div class="content">
+        <div class="file-list" id="fileList"></div>
+        <div class="preview-panel" id="previewPanel">
+            <div class="preview-header">
+                <span id="previewTitle"></span>
+                <button class="close-btn" onclick="closePreview()">✕</button>
+            </div>
+            <div class="preview-content" id="previewContent"></div>
+        </div>
+    </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightboxImg" src="" alt="">
+    <button class="lightbox-close">✕</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+<script>
+const icons = {
+    folder: '📁', pdf: '📄', txt: '📝', md: '📝', doc: '📄', docx: '📄',
+    mp4: '🎬', avi: '🎬', mkv: '🎬', mov: '🎬', mp3: '🎵', wav: '🎵',
+    jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', svg: '🖼️',
+    zip: '📦', rar: '📦', default: '📄'
+};
+
+function getIcon(name, isDir) {
+    if (isDir) return icons.folder;
+    const ext = name.split('.').pop().toLowerCase();
+    return icons[ext] || icons.default;
+}
+
+function formatSize(bytes) {
+    if (!bytes || bytes === '-') return '-';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+function parse() {
+    const pre = document.querySelector('pre');
+    if (!pre) return;
+
+    const links = pre.querySelectorAll('a');
+    const files = [];
+
+    links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href === '../') return;
+
+        const name = link.textContent.replace(/\/$/, '');
+        const isDir = href.endsWith('/');
+
+        const text = link.parentNode.textContent;
+        const parts = text.split(/\s+/).filter(p => p);
+
+        let mtime = '-', size = 0;
+        if (parts.length >= 3) {
+            mtime = parts[parts.length - 2] + ' ' + parts[parts.length - 1];
+            const sizeStr = parts[parts.length - 3];
+            size = sizeStr === '-' ? 0 : parseInt(sizeStr);
+        }
+
+        files.push({ name, href, isDir, mtime, size });
+    });
+
+    render(files);
+}
+
+function render(files) {
+    const list = document.getElementById('fileList');
+    list.innerHTML = '';
+
+    files.forEach(file => {
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.innerHTML = `
+            <div class="file-icon">${getIcon(file.name, file.isDir)}</div>
+            <div class="file-info">
+                <div class="file-name">${file.name}</div>
+                <div class="file-meta">${file.mtime} · ${formatSize(file.size)}</div>
+            </div>
+        `;
+        item.onclick = () => handleClick(file);
+        list.appendChild(item);
+    });
+}
+
+async function handleClick(file) {
+    if (file.isDir) {
+        window.location.href = file.href;
+        return;
+    }
+
+    const ext = file.name.split('.').pop().toLowerCase();
+
+    if (ext === 'md') {
+        const res = await fetch(file.href);
+        let content = await res.text();
+        const html = marked.parse(content);
+        document.getElementById('previewTitle').textContent = file.name;
+        document.getElementById('previewContent').innerHTML = html;
+        document.getElementById('previewPanel').classList.add('active');
+    } else if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(ext)) {
+        document.getElementById('lightboxImg').src = file.href;
+        document.getElementById('lightbox').classList.add('active');
+    } else if (['mp4', 'avi', 'mkv', 'mov'].includes(ext)) {
+        const video = `<video controls style="width:100%;max-height:70vh"><source src="${file.href}"></video>`;
+        document.getElementById('previewTitle').textContent = file.name;
+        document.getElementById('previewContent').innerHTML = video;
+        document.getElementById('previewPanel').classList.add('active');
+    } else {
+        window.open(file.href);
+    }
+}
+
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active');
+}
+
+function closePreview() {
+    document.getElementById('previewPanel').classList.remove('active');
+}
+
+const path = window.location.pathname;
+const parts = path.split('/').filter(p => p);
+let html = '<a href="/">根目录</a>';
+let current = '';
+parts.forEach(part => {
+    current += '/' + part;
+    html += ` / <a href="${current}">${decodeURIComponent(part)}</a>`;
+});
+document.getElementById('breadcrumb').innerHTML = html;
+
+parse();
+</script>
