@@ -71,7 +71,7 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
     <button class="lightbox-close">✕</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github.min.css">
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
 <script>
@@ -180,21 +180,15 @@ async function handleClick(file) {
         const res = await fetch(file.href);
         let content = await res.text();
 
-        const md = window.markdownit({
-            highlight: function (str, lang) {
-                if (lang && hljs.getLanguage(lang)) {
-                    try {
-                        return hljs.highlight(str, { language: lang }).value;
-                    } catch (__) {}
-                }
-                return '';
-            }
-        });
-
-        const html = md.render(content);
+        const html = marked.parse(content);
 
         document.getElementById('previewTitle').textContent = file.name;
         document.getElementById('previewContent').innerHTML = html;
+
+        document.querySelectorAll('#previewContent pre code').forEach(block => {
+            hljs.highlightElement(block);
+        });
+
         document.getElementById('previewPanel').classList.add('active');
     } else if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(ext)) {
         document.getElementById('lightboxImg').src = file.href;
