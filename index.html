@@ -35,7 +35,8 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 .lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; }
 .lightbox.active { display: flex; }
 .lightbox img { max-width: 90%; max-height: 90%; }
-.lightbox-close { position: absolute; top: 20px; right: 20px; background: white; border: none; font-size: 30px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; }
+.lightbox-close { position: absolute; top: 20px; right: 40px; font-size: 40px; color: white; cursor: pointer; z-index: 10000; font-weight: 300; line-height: 1; padding: 10px; background: none; border: none; }
+.lightbox-close:hover { color: #ff5252; }
 .preview-content h1, .preview-content h2, .preview-content h3 { margin-top: 24px; margin-bottom: 16px; font-weight: 600; line-height: 1.25; }
 .preview-content h1 { font-size: 2em; border-bottom: 1px solid #eee; padding-bottom: 8px; }
 .preview-content h2 { font-size: 1.5em; border-bottom: 1px solid #eee; padding-bottom: 8px; }
@@ -66,16 +67,19 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 .lightbox-prev { left: 20px; }
 .lightbox-next { right: 20px; }
 .lightbox-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; font-size: 16px; background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 20px; z-index: 10001; }
+.lightbox-filename { position: absolute; top: 20px; left: 20px; color: white; font-size: 16px; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 4px; max-width: 60%; word-break: break-all; z-index: 10001; }
 @media (max-width: 768px) {
     .content { flex-direction: column; }
     .preview-panel { width: 100%; }
     .file-item { flex-wrap: wrap; }
     .media-gallery { grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .media-item img, .media-item video { height: 120px; }
+    .lightbox-close { top: 10px; right: 10px; font-size: 35px; padding: 5px; }
     .lightbox-nav { font-size: 35px; padding: 10px; }
     .lightbox-prev { left: 5px; }
     .lightbox-next { right: 5px; }
-    .lightbox-counter { bottom: 80px; font-size: 14px; }
+    .lightbox-counter { bottom: 80px; font-size: 14px; padding: 6px 12px; }
+    .lightbox-filename { top: 10px; left: 10px; font-size: 12px; padding: 6px 10px; max-width: 70%; right: 60px; }
 }
 </style>
 
@@ -116,9 +120,9 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
     <span class="lightbox-close">✕</span>
     <span class="lightbox-nav lightbox-prev" onclick="event.stopPropagation(); prevMedia()">‹</span>
     <span class="lightbox-nav lightbox-next" onclick="event.stopPropagation(); nextMedia()">›</span>
+    <div class="lightbox-filename" id="lightboxFilename"></div>
     <div class="lightbox-counter" id="lightboxCounter"></div>
     <img id="lightboxImg" src="" alt="">
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
@@ -247,6 +251,7 @@ async function handleClick(file) {
         document.getElementById('previewPanel').classList.add('active');
     } else if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(ext)) {
         document.getElementById('lightboxImg').src = file.href;
+        document.getElementById('lightboxFilename').textContent = file.name;
         document.getElementById('lightbox').classList.add('active');
     } else if (['mp4', 'avi', 'mkv', 'mov'].includes(ext)) {
         const video = `<video controls style="width:100%;max-height:70vh"><source src="${file.href}"></video>`;
@@ -274,6 +279,7 @@ function updateMediaLightbox() {
     const file = currentMediaList[currentMediaIndex];
     document.getElementById('lightboxImg').src = file.href;
     document.getElementById('lightboxCounter').textContent = `${currentMediaIndex + 1} / ${currentMediaList.length}`;
+    document.getElementById('lightboxFilename').textContent = file.name;
 }
 
 function prevMedia() {
