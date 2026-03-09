@@ -117,7 +117,7 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 </div>
 
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-    <span class="lightbox-close">✕</span>
+    <span class="lightbox-close">&times;</span>
     <span class="lightbox-nav lightbox-prev" onclick="event.stopPropagation(); prevMedia()">‹</span>
     <span class="lightbox-nav lightbox-next" onclick="event.stopPropagation(); nextMedia()">›</span>
     <div class="lightbox-filename" id="lightboxFilename"></div>
@@ -250,8 +250,11 @@ async function handleClick(file) {
 
         document.getElementById('previewPanel').classList.add('active');
     } else if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(ext)) {
+        currentMediaList = allFiles.filter(f => !f.isDir && ['jpg','jpeg','png','gif','svg'].includes(f.name.split('.').pop().toLowerCase()));
+        currentMediaIndex = currentMediaList.findIndex(f => f.href === file.href);
         document.getElementById('lightboxImg').src = file.href;
         document.getElementById('lightboxFilename').textContent = file.name;
+        document.getElementById('lightboxCounter').textContent = `${currentMediaIndex + 1} / ${currentMediaList.length}`;
         document.getElementById('lightbox').classList.add('active');
     } else if (['mp4', 'avi', 'mkv', 'mov'].includes(ext)) {
         const video = `<video controls style="width:100%;max-height:70vh"><source src="${file.href}"></video>`;
