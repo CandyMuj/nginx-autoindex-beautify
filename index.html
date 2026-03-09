@@ -6,6 +6,9 @@ body > pre { display: none !important; }
 header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 header h1 { font-size: 24px; margin-bottom: 10px; }
 .breadcrumb { color: #666; font-size: 14px; }
+.header-actions { margin-top: 15px; }
+.media-btn { padding: 8px 16px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+.media-btn:hover { background: #1976D2; }
 .breadcrumb a { color: #0066cc; text-decoration: none; }
 .content { display: flex; gap: 20px; }
 .file-list { flex: 1; background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); height: min(max(600px, calc(100vh - 200px)), 800px); overflow: hidden; display: flex; flex-direction: column; }
@@ -49,10 +52,30 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 .preview-content table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
 .preview-content th, .preview-content td { border: 1px solid #ddd; padding: 8px 12px; text-align: left; }
 .preview-content th { background: #f6f8fa; font-weight: 600; }
+.media-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #eee; flex-wrap: wrap; }
+.media-tab { padding: 10px 16px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; color: #666; font-size: 14px; }
+.media-tab.active { border-bottom-color: #2196F3; color: #2196F3; font-weight: 600; }
+.media-tab:hover { color: #2196F3; }
+.media-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+.media-item { border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.3s; background: white; }
+.media-item:hover { transform: translateY(-5px); }
+.media-item img, .media-item video { width: 100%; height: 150px; object-fit: cover; }
+.media-item .name { padding: 10px; font-size: 12px; text-align: center; word-break: break-all; }
+.lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); font-size: 50px; color: white; cursor: pointer; padding: 20px; user-select: none; z-index: 10001; }
+.lightbox-nav:hover { color: #2196F3; }
+.lightbox-prev { left: 20px; }
+.lightbox-next { right: 20px; }
+.lightbox-counter { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); color: white; font-size: 16px; background: rgba(0,0,0,0.7); padding: 8px 16px; border-radius: 20px; z-index: 10001; }
 @media (max-width: 768px) {
     .content { flex-direction: column; }
     .preview-panel { width: 100%; }
     .file-item { flex-wrap: wrap; }
+    .media-gallery { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .media-item img, .media-item video { height: 120px; }
+    .lightbox-nav { font-size: 35px; padding: 10px; }
+    .lightbox-prev { left: 5px; }
+    .lightbox-next { right: 5px; }
+    .lightbox-counter { bottom: 80px; font-size: 14px; }
 }
 </style>
 
@@ -60,6 +83,9 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
     <header>
         <h1>📁 文件浏览器</h1>
         <div class="breadcrumb" id="breadcrumb"></div>
+        <div class="header-actions">
+            <button class="media-btn" onclick="showMediaGallery()">📷 媒体资源</button>
+        </div>
     </header>
     <div class="content">
         <div class="file-list">
@@ -87,8 +113,12 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 </div>
 
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <span class="lightbox-close">✕</span>
+    <span class="lightbox-nav lightbox-prev" onclick="event.stopPropagation(); prevMedia()">‹</span>
+    <span class="lightbox-nav lightbox-next" onclick="event.stopPropagation(); nextMedia()">›</span>
+    <div class="lightbox-counter" id="lightboxCounter"></div>
     <img id="lightboxImg" src="" alt="">
-    <button class="lightbox-close">✕</button>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
@@ -101,6 +131,10 @@ const icons = {
     jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', svg: '🖼️',
     zip: '📦', rar: '📦', default: '📄'
 };
+
+let allFiles = [];
+let currentMediaIndex = 0;
+let currentMediaList = [];
 
 function getIcon(name, isDir) {
     if (isDir) return icons.folder;
@@ -169,6 +203,7 @@ function parse() {
 }
 
 function render(files) {
+    allFiles = files;
     const list = document.getElementById('fileList');
     list.innerHTML = '';
 
@@ -225,6 +260,30 @@ async function handleClick(file) {
 
 function closeLightbox() {
     document.getElementById('lightbox').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function openMediaLightbox(index) {
+    currentMediaIndex = index;
+    updateMediaLightbox();
+    document.getElementById('lightbox').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function updateMediaLightbox() {
+    const file = currentMediaList[currentMediaIndex];
+    document.getElementById('lightboxImg').src = file.href;
+    document.getElementById('lightboxCounter').textContent = `${currentMediaIndex + 1} / ${currentMediaList.length}`;
+}
+
+function prevMedia() {
+    currentMediaIndex = (currentMediaIndex - 1 + currentMediaList.length) % currentMediaList.length;
+    updateMediaLightbox();
+}
+
+function nextMedia() {
+    currentMediaIndex = (currentMediaIndex + 1) % currentMediaList.length;
+    updateMediaLightbox();
 }
 
 function closePreview() {
@@ -243,6 +302,68 @@ function closeFullscreen() {
     document.getElementById('fullscreenPreview').classList.remove('active');
 }
 
+function showMediaGallery() {
+    const images = allFiles.filter(f => !f.isDir && ['jpg','jpeg','png','gif','svg','webp'].includes(f.name.split('.').pop().toLowerCase()));
+    const videos = allFiles.filter(f => !f.isDir && ['mp4','avi','mkv','mov','webm'].includes(f.name.split('.').pop().toLowerCase()));
+    const audios = allFiles.filter(f => !f.isDir && ['mp3','wav','ogg','m4a'].includes(f.name.split('.').pop().toLowerCase()));
+
+    const total = images.length + videos.length + audios.length;
+
+    document.getElementById('previewTitle').textContent = '媒体资源';
+    document.getElementById('previewContent').innerHTML = `
+        <div class="media-tabs">
+            <div class="media-tab active" onclick="filterMedia('all')">全部 (${total})</div>
+            <div class="media-tab" onclick="filterMedia('image')">图片 (${images.length})</div>
+            <div class="media-tab" onclick="filterMedia('video')">视频 (${videos.length})</div>
+            <div class="media-tab" onclick="filterMedia('audio')">音频 (${audios.length})</div>
+        </div>
+        <div class="media-gallery" id="mediaGallery"></div>
+    `;
+
+    window.mediaData = { images, videos, audios };
+    filterMedia('all');
+    document.getElementById('previewPanel').classList.add('active');
+}
+
+function filterMedia(type) {
+    document.querySelectorAll('.media-tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+
+    const { images, videos, audios } = window.mediaData;
+    let items = [];
+
+    if (type === 'all') items = [...images, ...videos, ...audios];
+    else if (type === 'image') items = images;
+    else if (type === 'video') items = videos;
+    else if (type === 'audio') items = audios;
+
+    currentMediaList = items.filter(f => ['jpg','jpeg','png','gif','svg','webp'].includes(f.name.split('.').pop().toLowerCase()));
+
+    const gallery = document.getElementById('mediaGallery');
+    gallery.innerHTML = items.map((file, idx) => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        const isImage = ['jpg','jpeg','png','gif','svg','webp'].includes(ext);
+        const isVideo = ['mp4','avi','mkv','mov','webm'].includes(ext);
+
+        if (isImage) {
+            return `<div class="media-item" onclick="openMediaLightbox(${currentMediaList.indexOf(file)})">
+                <img src="${file.href}" alt="${file.name}">
+                <div class="name">${file.name}</div>
+            </div>`;
+        } else if (isVideo) {
+            return `<div class="media-item">
+                <video src="${file.href}" onclick="this.paused?this.play():this.pause()"></video>
+                <div class="name">${file.name}</div>
+            </div>`;
+        } else {
+            return `<div class="media-item">
+                <audio controls src="${file.href}" style="width:100%;height:150px;"></audio>
+                <div class="name">${file.name}</div>
+            </div>`;
+        }
+    }).join('');
+}
+
 const path = window.location.pathname;
 const parts = path.split('/').filter(p => p);
 let html = '<a href="/">根目录</a>';
@@ -254,4 +375,26 @@ parts.forEach(part => {
 document.getElementById('breadcrumb').innerHTML = html;
 
 parse();
+
+document.addEventListener('keydown', (e) => {
+    const lightbox = document.getElementById('lightbox');
+    if (!lightbox.classList.contains('active')) return;
+    if (e.key === 'ArrowLeft') prevMedia();
+    else if (e.key === 'ArrowRight') nextMedia();
+    else if (e.key === 'Escape') closeLightbox();
+});
+
+let touchStartX = 0;
+document.getElementById('lightbox').addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+});
+
+document.getElementById('lightbox').addEventListener('touchend', (e) => {
+    const touchEndX = e.changedTouches[0].screenX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 50) {
+        if (diff > 0) nextMedia();
+        else prevMedia();
+    }
+});
 </script>
