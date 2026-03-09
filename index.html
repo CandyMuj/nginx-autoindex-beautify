@@ -70,36 +70,58 @@ function getIcon(name, isDir) {
     return icons[ext] || icons.default;
 }
 
-function formatSize(bytes) {
-    if (!bytes || bytes === '-') return '-';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+function formatSize(sizeStr) {
+    if (!sizeStr || sizeStr === '-') return '-';
+
+    const match = sizeStr.match(/^([\d.]+)([KMGT]?)$/);
+    if (!match) return sizeStr;
+
+    let bytes = parseFloat(match[1]);
+    const unit = match[2];
+
+    const unitMultiplier = {'': 1, 'K': 1024, 'M': 1024*1024, 'G': 1024*1024*1024, 'T': 1024*1024*1024*1024};
+    bytes *= unitMultiplier[unit];
+
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    let i = 0;
+    while (bytes >= 1024 && i < units.length - 1) {
+        bytes /= 1024;
+        i++;
+    }
+
+    return bytes.toFixed(2) + units[i];
+}
+
+function formatTime(timeStr) {
+    const months = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+    const match = timeStr.match(/(\d{2})-(\w{3})-(\d{4})\s+(\d{2}):(\d{2})/);
+    if (!match) return timeStr;
+    const [,day,mon,year,hour,min] = match;
+    return `${year}-${String(months[mon]).padStart(2,'0')}-${day} ${hour}:${min}:00`;
 }
 
 function parse() {
     const pre = document.querySelector('pre');
     if (!pre) return;
 
-    const links = pre.querySelectorAll('a');
+    const lines = pre.innerHTML.split('\n');
     const files = [];
 
-    links.forEach(link => {
-        const href = link.getAttribute('href');
-        if (href === '../') return;
+    lines.forEach(line => {
+        const linkMatch = line.match(/<a href="([^"]+)">([^<]+)<\/a>/);
+        if (!linkMatch || linkMatch[1] === '../') return;
 
-        const name = link.textContent.replace(/\/$/, '');
+        const href = linkMatch[1];
+        const name = linkMatch[2].replace(/\/$/, '');
         const isDir = href.endsWith('/');
 
-        const text = link.parentNode.textContent;
-        const parts = text.split(/\s+/).filter(p => p);
+        const afterLink = line.substring(line.indexOf('</a>') + 4);
+        const parts = afterLink.trim().split(/\s+/);
 
-        let mtime = '-', size = 0;
+        let mtime = '-', size = '-';
         if (parts.length >= 3) {
-            mtime = parts[parts.length - 2] + ' ' + parts[parts.length - 1];
-            const sizeStr = parts[parts.length - 3];
-            size = sizeStr === '-' ? 0 : parseInt(sizeStr);
+            mtime = parts[0] + ' ' + parts[1];
+            size = parts[2];
         }
 
         files.push({ name, href, isDir, mtime, size });
@@ -119,7 +141,7 @@ function render(files) {
             <div class="file-icon">${getIcon(file.name, file.isDir)}</div>
             <div class="file-info">
                 <div class="file-name">${file.name}</div>
-                <div class="file-meta">${file.mtime} · ${formatSize(file.size)}</div>
+                <div class="file-meta">${formatTime(file.mtime)} · ${formatSize(file.size)}</div>
             </div>
             ${!file.isDir ? '<button class="download-btn" onclick="event.stopPropagation(); window.open(\'' + file.href + '\', \'_blank\')">下载</button>' : ''}
         `;
