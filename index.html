@@ -279,6 +279,11 @@ async function handleClick(file) {
         document.getElementById('previewTitle').textContent = file.name;
         document.getElementById('previewContent').innerHTML = video;
         document.getElementById('previewPanel').classList.add('active');
+    } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) {
+        const audio = `<audio controls style="width:100%"><source src="${file.href}"></audio>`;
+        document.getElementById('previewTitle').textContent = file.name;
+        document.getElementById('previewContent').innerHTML = audio;
+        document.getElementById('previewPanel').classList.add('active');
     } else {
         window.open(file.href);
     }
