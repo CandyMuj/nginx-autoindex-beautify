@@ -140,8 +140,17 @@ header h1 { font-size: 24px; margin-bottom: 10px; }
 const icons = {
     folder: '📁', pdf: '📄', txt: '📝', md: '📝', doc: '📄', docx: '📄',
     mp4: '🎬', avi: '🎬', mkv: '🎬', mov: '🎬', mp3: '🎵', wav: '🎵',
-    jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', svg: '🖼️',
+    jpg: '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', svg: '🖼️', avif: '🖼️',
     zip: '📦', rar: '📦', default: '📄'
+};
+const fileTypes = {
+    image: ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'avif'],
+    video: ['mp4', 'avi', 'mkv', 'mov', 'webm'],
+    audio: ['mp3', 'wav', 'ogg', 'm4a'],
+    markdown: ['md'],
+    web: ['html', 'htm'],
+    static: ['css', 'js'],
+    text: ['txt']
 };
 
 let allFiles = [];
@@ -267,19 +276,19 @@ async function handleClick(file) {
         previewContent.scrollTop = mdScrollPositions[file.name] || 0;
 
         document.getElementById('previewPanel').classList.add('active');
-    } else if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(ext)) {
-        currentMediaList = allFiles.filter(f => !f.isDir && ['jpg','jpeg','png','gif','svg'].includes(f.name.split('.').pop().toLowerCase()));
+    } else if (fileTypes.image.includes(ext)) {
+        currentMediaList = allFiles.filter(f => !f.isDir && fileTypes.image.includes(f.name.split('.').pop().toLowerCase()));
         currentMediaIndex = currentMediaList.findIndex(f => f.href === file.href);
         document.getElementById('lightboxImg').src = file.href;
         document.getElementById('lightboxFilename').textContent = file.name;
         document.getElementById('lightboxCounter').textContent = `${currentMediaIndex + 1} / ${currentMediaList.length}`;
         document.getElementById('lightbox').classList.add('active');
-    } else if (['mp4', 'avi', 'mkv', 'mov'].includes(ext)) {
+    } else if (fileTypes.video.includes(ext)) {
         const video = `<video controls style="width:100%;max-height:70vh"><source src="${file.href}"></video>`;
         document.getElementById('previewTitle').textContent = file.name;
         document.getElementById('previewContent').innerHTML = video;
         document.getElementById('previewPanel').classList.add('active');
-    } else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) {
+    } else if (fileTypes.audio.includes(ext)) {
         const audio = `<audio controls style="width:100%"><source src="${file.href}"></audio>`;
         document.getElementById('previewTitle').textContent = file.name;
         document.getElementById('previewContent').innerHTML = audio;
@@ -382,9 +391,9 @@ function fullscreenVideo(href) {
 
 function showMediaGallery() {
     galleryType = '';
-    const images = allFiles.filter(f => !f.isDir && ['jpg','jpeg','png','gif','svg','webp'].includes(f.name.split('.').pop().toLowerCase()));
-    const videos = allFiles.filter(f => !f.isDir && ['mp4','avi','mkv','mov','webm'].includes(f.name.split('.').pop().toLowerCase()));
-    const audios = allFiles.filter(f => !f.isDir && ['mp3','wav','ogg','m4a'].includes(f.name.split('.').pop().toLowerCase()));
+    const images = allFiles.filter(f => !f.isDir && fileTypes.image.includes(f.name.split('.').pop().toLowerCase()));
+    const videos = allFiles.filter(f => !f.isDir && fileTypes.video.includes(f.name.split('.').pop().toLowerCase()));
+    const audios = allFiles.filter(f => !f.isDir && fileTypes.audio.includes(f.name.split('.').pop().toLowerCase()));
 
     const total = images.length + videos.length + audios.length;
 
@@ -406,11 +415,12 @@ function showMediaGallery() {
 
 function showDocGallery() {
     galleryType = '';
-    const markdown = allFiles.filter(f => !f.isDir && ['md'].includes(f.name.split('.').pop().toLowerCase()));
-    const web = allFiles.filter(f => !f.isDir && ['html','htm'].includes(f.name.split('.').pop().toLowerCase()));
-    const static_ = allFiles.filter(f => !f.isDir && ['css','js'].includes(f.name.split('.').pop().toLowerCase()));
-    const text = allFiles.filter(f => !f.isDir && ['txt'].includes(f.name.split('.').pop().toLowerCase()));
-    const other = allFiles.filter(f => !f.isDir && !['md','html','htm','css','js','txt','jpg','jpeg','png','gif','svg','webp','mp4','avi','mkv','mov','webm','mp3','wav','ogg','m4a'].includes(f.name.split('.').pop().toLowerCase()));
+    const markdown = allFiles.filter(f => !f.isDir && fileTypes.markdown.includes(f.name.split('.').pop().toLowerCase()));
+    const web = allFiles.filter(f => !f.isDir && fileTypes.web.includes(f.name.split('.').pop().toLowerCase()));
+    const static_ = allFiles.filter(f => !f.isDir && fileTypes.static.includes(f.name.split('.').pop().toLowerCase()));
+    const text = allFiles.filter(f => !f.isDir && fileTypes.text.includes(f.name.split('.').pop().toLowerCase()));
+    const allMediaTypes = [...fileTypes.image, ...fileTypes.video, ...fileTypes.audio, ...fileTypes.markdown, ...fileTypes.web, ...fileTypes.static, ...fileTypes.text];
+    const other = allFiles.filter(f => !f.isDir && !allMediaTypes.includes(f.name.split('.').pop().toLowerCase()));
 
     const total = markdown.length + web.length + static_.length + text.length + other.length;
 
@@ -486,13 +496,13 @@ function filterMedia(type) {
     else if (type === 'video') items = videos;
     else if (type === 'audio') items = audios;
 
-    currentMediaList = items.filter(f => ['jpg','jpeg','png','gif','svg','webp'].includes(f.name.split('.').pop().toLowerCase()));
+    currentMediaList = items.filter(f => fileTypes.image.includes(f.name.split('.').pop().toLowerCase()));
 
     const gallery = document.getElementById('mediaGallery');
     gallery.innerHTML = items.map((file, idx) => {
         const ext = file.name.split('.').pop().toLowerCase();
-        const isImage = ['jpg','jpeg','png','gif','svg','webp'].includes(ext);
-        const isVideo = ['mp4','avi','mkv','mov','webm'].includes(ext);
+        const isImage = fileTypes.image.includes(ext);
+        const isVideo = fileTypes.video.includes(ext);
 
         if (isImage) {
             return `<div class="media-item" onclick="openMediaLightbox(${currentMediaList.indexOf(file)})">
