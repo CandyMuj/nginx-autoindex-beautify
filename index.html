@@ -547,11 +547,25 @@ document.getElementById('breadcrumb').innerHTML = html;
 parse();
 
 document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        const fullscreen = document.getElementById('fullscreenPreview');
+        const preview = document.getElementById('previewPanel');
+        const lightbox = document.getElementById('lightbox');
+
+        if (fullscreen.classList.contains('active')) {
+            closeFullscreen();
+        } else if (preview.classList.contains('active')) {
+            closePreview();
+        } else if (lightbox.classList.contains('active')) {
+            closeLightbox();
+        }
+        return;
+    }
+
     const lightbox = document.getElementById('lightbox');
     if (!lightbox.classList.contains('active')) return;
     if (e.key === 'ArrowLeft') prevMedia();
     else if (e.key === 'ArrowRight') nextMedia();
-    else if (e.key === 'Escape') closeLightbox();
 });
 
 let touchStartX = 0;
