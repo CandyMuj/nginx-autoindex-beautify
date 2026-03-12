@@ -214,7 +214,7 @@ function parse() {
         if (!linkMatch || linkMatch[1] === '../') return;
 
         const href = linkMatch[1];
-        const name = linkMatch[2].replace(/\/$/, '');
+        const name = decodeURIComponent(href).replace(/\/$/, '');
         const isDir = href.endsWith('/');
 
         const afterLink = line.substring(line.indexOf('</a>') + 4);
